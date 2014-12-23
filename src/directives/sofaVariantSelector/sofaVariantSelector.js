@@ -101,7 +101,7 @@ angular.module('sdk.directives.sofaVariantSelector')
                         if (!scope.properties[property]) {
                             scope.properties[property] = {
                                 name: property,
-                                label: localeService.getTranslation('variantSelector.' + property) || property
+                                label: localeService.getTranslation('variantSelector.' + property, true) || property
                             };
                         }
                     }

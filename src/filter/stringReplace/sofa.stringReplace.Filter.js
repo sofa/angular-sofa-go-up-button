@@ -1,6 +1,6 @@
 angular
     .module('sdk.filter.stringReplace', [])
-    .filter('stringReplace', [function () {
+    .filter('stringReplace', ['$exceptionHandler', function ($exceptionHandler) {
 
         'use strict';
         // Takes n arguments after "template". Either an array or arguments are turned into one
@@ -26,11 +26,19 @@ angular
 
             var parse = function (template, values) {
                 var regEx = /%s/,
-                    hits  = template.match(/%s/g).length,
+                    hits  = template.match(/%s/g),
                     i     = 0;
 
-                for (; i < hits + 1; i++) {
-                    template = template.replace(regEx, values[i]);
+                try {
+                    if (hits && hits.length) {
+                        for (; i < hits.length + 1; i++) {
+                            template = template.replace(regEx, values[i]);
+                        }
+                    } else {
+                        throw new Error('Template "' + template + '" doesn\'t contain any placeholder strings (%s).');
+                    }
+                } catch(e) {
+                    $exceptionHandler(e);
                 }
 
                 return template;

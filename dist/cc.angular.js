@@ -468,11 +468,11 @@ angular
             self.navigateToUrl(urlConstructionService.createUrlForShippingCostsPage());
         };
 
-        var navigateToParentCategory = function(currentCategoryUrlId){
-            couchService.getCategory(currentCategoryUrlId)
+        var navigateToParentCategory = function(categoryId){
+            couchService.getCategory(categoryId)
                 .then(function(category){
                     if (category.parent && category.parent.parent){
-                        self.navigateToUrl(category.parent.getOriginFullUrl());
+                        self.navigateToUrl(category.parent.getUrl());
                     }
                     else{
                         self.navigateToRootCategory();
@@ -492,16 +492,16 @@ angular
                 .then(function (state) {
                     if (state.stateName === 'product') {
                         couchService
-                            .getCategory(state.stateParams.category)
+                            .getCategory(state.stateParams.categoryId)
                             .then(function(category){
-                                self.navigateToUrl(category.getOriginFullUrl());
+                                self.navigateToUrl(category.getUrl());
                             });
                     }
                     else if (state.stateName === 'products') {
-                        navigateToParentCategory(state.stateParams.category);
+                        navigateToParentCategory(state.stateParams.categoryId);
                     }
                     else if (state.stateName === 'categories') {
-                        navigateToParentCategory(state.stateParams.category);
+                        navigateToParentCategory(state.stateParams.categoryId);
                     }
                     else {
                         //TODO: The method is actually designed to go up in the tree
@@ -673,25 +673,32 @@ angular
 
         'use strict';
 
-        var localeData = $window.cc.Lang;
-
         var self = {};
 
-        self.getTranslation = function (path) {
+        self.translationData = {};
+
+        // Call this in your app's run phase to use your global translation object
+        self.setTranslationData = function (obj) {
+            self.translationData = obj;
+        };
+
+        self.getTranslation = function (path, failSilent) {
 
             if (!path) {
-                return localeData;
+                return self.translationData;
             }
 
             var objects = path.split('.');
             var locale  = '';
             var length  = objects.length;
-            var ln      = localeData;
+            var ln      = self.translationData;
 
             objects.every(function (el, i) {
                 try {
                     if (!ln[el]) {
-                        throw new Error('No translation found for: "' + el + '"');
+                        if (!failSilent) {
+                            throw new Error('No translation found for: "' + el + '"');
+                        }
                     } else {
                         if (i + 1 !== length) {
                             ln = ln[el];
@@ -4056,7 +4063,7 @@ angular.module('sdk.directives.sofaVariantSelector')
                         if (!scope.properties[property]) {
                             scope.properties[property] = {
                                 name: property,
-                                label: localeService.getTranslation('variantSelector.' + property) || property
+                                label: localeService.getTranslation('variantSelector.' + property, true) || property
                             };
                         }
                     }
@@ -4231,7 +4238,7 @@ angular.module('sdk.filter', [
 
 angular
     .module('sdk.filter.stringReplace', [])
-    .filter('stringReplace', [function () {
+    .filter('stringReplace', ['$exceptionHandler', function ($exceptionHandler) {
 
         'use strict';
         // Takes n arguments after "template". Either an array or arguments are turned into one
@@ -4257,11 +4264,19 @@ angular
 
             var parse = function (template, values) {
                 var regEx = /%s/,
-                    hits  = template.match(/%s/g).length,
+                    hits  = template.match(/%s/g),
                     i     = 0;
 
-                for (; i < hits + 1; i++) {
-                    template = template.replace(regEx, values[i]);
+                try {
+                    if (hits && hits.length) {
+                        for (; i < hits.length + 1; i++) {
+                            template = template.replace(regEx, values[i]);
+                        }
+                    } else {
+                        throw new Error('Template "' + template + '" doesn\'t contain any placeholder strings (%s).');
+                    }
+                } catch(e) {
+                    $exceptionHandler(e);
                 }
 
                 return template;

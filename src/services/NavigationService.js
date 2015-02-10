@@ -53,11 +53,11 @@ angular
             self.navigateToUrl(urlConstructionService.createUrlForShippingCostsPage());
         };
 
-        var navigateToParentCategory = function(currentCategoryUrlId){
-            couchService.getCategory(currentCategoryUrlId)
+        var navigateToParentCategory = function(categoryId){
+            couchService.getCategory(categoryId)
                 .then(function(category){
                     if (category.parent && category.parent.parent){
-                        self.navigateToUrl(category.parent.getOriginFullUrl());
+                        self.navigateToUrl(category.parent.getUrl());
                     }
                     else{
                         self.navigateToRootCategory();
@@ -77,16 +77,16 @@ angular
                 .then(function (state) {
                     if (state.stateName === 'product') {
                         couchService
-                            .getCategory(state.stateParams.category)
+                            .getCategory(state.stateParams.categoryId)
                             .then(function(category){
-                                self.navigateToUrl(category.getOriginFullUrl());
+                                self.navigateToUrl(category.getUrl());
                             });
                     }
                     else if (state.stateName === 'products') {
-                        navigateToParentCategory(state.stateParams.category);
+                        navigateToParentCategory(state.stateParams.categoryId);
                     }
                     else if (state.stateName === 'categories') {
-                        navigateToParentCategory(state.stateParams.category);
+                        navigateToParentCategory(state.stateParams.categoryId);
                     }
                     else {
                         //TODO: The method is actually designed to go up in the tree
